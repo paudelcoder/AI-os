@@ -10,10 +10,13 @@
         "vehicle_type": "string (e.g., 'standard', 'premium')"
       },
       "output_schema": {
-        "ride_id": "string",
-        "driver_name": "string",
-        "eta_minutes": "number",
-        "price_estimate": "number"
+        "display_hint": "ride_confirmation",
+        "properties": {
+          "ride_id": "string",
+          "driver_name": "string",
+          "eta_minutes": "number",
+          "price_estimate": "number"
+        }
       },
       "scopes": [
         "payment.charge",

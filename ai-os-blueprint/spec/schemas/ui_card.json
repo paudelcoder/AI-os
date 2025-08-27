@@ -1,0 +1,48 @@
+{
+  "card_id": "card_ride_info_xyz_789",
+  "card_type": "rich_info",
+  "title": "Your Ride is Confirmed",
+  "subtitle": "Driver: Alex",
+  "components": [
+    {
+      "type": "highlight",
+      "label": "Arriving in",
+      "value": "5 minutes"
+    },
+    {
+      "type": "key_value",
+      "label": "Estimated Price",
+      "value": "$15.75"
+    },
+    {
+      "type": "map_pin",
+      "label": "Driver Location",
+      "location": {
+        "latitude": 34.0522,
+        "longitude": -118.2437
+      }
+    }
+  ],
+  "actions": [
+    {
+      "label": "Cancel Ride",
+      "action_type": "destructive",
+      "capability_call": {
+        "call": "Rides.cancel_ride",
+        "parameters": {
+          "ride_id": "ride_xyz_789123"
+        }
+      }
+    },
+    {
+      "label": "Contact Driver",
+      "action_type": "primary",
+      "capability_call": {
+        "call": "Phone.call",
+        "parameters": {
+          "contact_id": "driver_alex_phone"
+        }
+      }
+    }
+  ]
+}
