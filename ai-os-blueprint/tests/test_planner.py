@@ -7,8 +7,8 @@ import os
 # Add the project root directory to the Python path to allow imports from 'core'
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from core.planner import Planner
-from core.policy_engine import Decision
+from system.core.planner import Planner
+from system.core.policy_engine import Decision
 
 class TestPlanner(unittest.TestCase):
     """Unit tests for the Planner service."""

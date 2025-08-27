@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch, Mock
+import requests
 
 import sys
 import os
@@ -7,7 +8,7 @@ import os
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from core.agent_broker import AgentBroker
+from system.core.agent_broker import AgentBroker
 
 class TestAgentBroker(unittest.TestCase):
     """Unit tests for the AgentBroker service."""
@@ -29,7 +30,7 @@ class TestAgentBroker(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.broker.register_agent({"capabilities": []}, self.test_base_url)
 
-    @patch('core.agent_broker.requests.post')
+    @patch('system.core.agent_broker.requests.post')
     def test_execute_call_success(self, mock_post):
         """Test a successful capability call execution."""
         # Configure the mock response
@@ -59,7 +60,7 @@ class TestAgentBroker(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.broker.execute_call(capability_call)
 
-    @patch('core.agent_broker.requests.post')
+    @patch('system.core.agent_broker.requests.post')
     def test_execute_call_http_error(self, mock_post):
         """Test that an HTTP error during the call is handled."""
         # Configure the mock to raise an exception

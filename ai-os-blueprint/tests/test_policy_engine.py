@@ -5,7 +5,7 @@ import unittest
 # Add the project root directory to the Python path to allow imports from 'core'
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from core.policy_engine import PolicyEngine, Decision
+from system.core.policy_engine import PolicyEngine, Decision
 
 class TestPolicyEngine(unittest.TestCase):
     """Unit tests for the PolicyEngine."""

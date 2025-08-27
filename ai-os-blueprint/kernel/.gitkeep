@@ -1,0 +1,2 @@
+# This file is used to ensure the 'kernel' directory is tracked by Git.
+# This directory is a placeholder for the OS kernel source code (e.g., a Linux fork).

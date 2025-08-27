@@ -13,8 +13,8 @@ The agent is a small web service written in Python using the Flask framework. It
 
 ## Capability: `search_calendar_events`
 
-- **Endpoint**: `GET /search_calendar_events`
-- **Query Parameter**: `date` (format: `YYYY-MM-DD`)
+- **Endpoint**: `POST /search_calendar_events`
+- **JSON Body**: `{"date": "YYYY-MM-DD"}`
 - **Success Response**: A JSON object containing a list of events.
   ```json
   {
@@ -27,7 +27,7 @@ The agent is a small web service written in Python using the Flask framework. It
     ]
   }
   ```
-- **Error Response**: A JSON object with an error message if the `date` parameter is missing.
+- **Error Response**: A JSON object with an error message if the `date` key is missing.
 
 ## Running the Agent with Docker
 
@@ -35,7 +35,7 @@ This agent is designed to be run as a container, which is how the AI OS would ma
 
 ### 1. Build the Docker Image
 
-From within this directory (`spec/reference_agent`), run the following command:
+From within this directory (`agents/calendar`), run the following command:
 
 ```sh
 docker build -t calendar-agent:latest .
@@ -57,11 +57,11 @@ You can test the running agent by sending a request to its endpoint. Open a new 
 
 ```sh
 # Test with a date that has events
-curl "http://localhost:5001/search_calendar_events?date=2024-09-27"
+curl -X POST -H "Content-Type: application/json" -d '{"date": "2024-09-27"}' http://localhost:5001/search_calendar_events
 
 # Test with a date that has no events
-curl "http://localhost:5001/search_calendar_events?date=2024-01-01"
+curl -X POST -H "Content-Type: application/json" -d '{"date": "2024-01-01"}' http://localhost:5001/search_calendar_events
 
 # Test the health check endpoint
-curl "http://localhost:5001/health"
+curl http://localhost:5001/health
 ```

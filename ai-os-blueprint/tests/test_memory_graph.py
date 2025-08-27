@@ -5,7 +5,7 @@ import os
 # Add the project root directory to the Python path to allow imports from 'core'
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from core.memory_graph import MemoryGraph
+from system.core.memory_graph import MemoryGraph
 
 class TestMemoryGraph(unittest.TestCase):
     """Unit tests for the MemoryGraph service."""
