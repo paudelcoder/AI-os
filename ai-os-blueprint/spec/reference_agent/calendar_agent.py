@@ -14,17 +14,17 @@ DUMMY_EVENTS = {
     ],
 }
 
-@app.route('/search_calendar_events', methods=['GET'])
+@app.route('/search_calendar_events', methods=['POST'])
 def search_calendar_events():
     """
     Implements the 'search_calendar_events' capability.
-    Expects a 'date' query parameter in 'YYYY-MM-DD' format.
+    Expects a JSON body with a 'date' key in 'YYYY-MM-DD' format.
     """
-    query_date = request.args.get('date')
+    data = request.get_json()
+    if not data or "date" not in data:
+        return jsonify({"error": "Missing 'date' in request body"}), 400
 
-    if not query_date:
-        return jsonify({"error": "Missing 'date' parameter"}), 400
-
+    query_date = data["date"]
     events = DUMMY_EVENTS.get(query_date, [])
 
     # The output should match the 'output_schema' in the agent_manifest.json

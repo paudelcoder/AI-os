@@ -9,15 +9,17 @@ class Planner:
     and secure plans.
     """
 
-    def __init__(self, memory_graph, policy_engine):
+    def __init__(self, memory_graph, policy_engine, agent_broker):
         """
         Initializes the Planner with its dependent services.
 
         :param memory_graph: An instance of MemoryGraph.
         :param policy_engine: An instance of PolicyEngine.
+        :param agent_broker: An instance of AgentBroker.
         """
         self.memory = memory_graph
         self.policy = policy_engine
+        self.broker = agent_broker
         # The Planner itself is a principal when accessing services like memory.
         self.principal = {"type": "os_service", "id": "Planner"}
 
@@ -82,3 +84,25 @@ class Planner:
 
         # 4. Return the final, validated plan
         return {"status": plan_status, "calls": plan_calls}
+
+    def execute_plan(self, plan):
+        """
+        Executes a given plan using the AgentBroker.
+        For this MVP, it only executes the first call in the plan.
+
+        :param plan: A plan object returned by create_plan.
+        :return: The result from the agent call, or an error object.
+        """
+        if plan.get("status") not in ["executable", "needs_confirmation"]:
+            return {"status": "execution_failed", "error": f"Plan is not executable. Status: {plan.get('status')}"}
+
+        if not plan.get("calls"):
+            return {"status": "execution_failed", "error": "Plan has no calls to execute."}
+
+        # Execute the first call in the plan
+        first_call = plan["calls"][0]
+        try:
+            result = self.broker.execute_call(first_call)
+            return {"status": "success", "result": result}
+        except Exception as e:
+            return {"status": "execution_failed", "error": str(e)}

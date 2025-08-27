@@ -15,12 +15,13 @@ class TestPlanner(unittest.TestCase):
 
     def setUp(self):
         """
-        Set up mock MemoryGraph and PolicyEngine services for each test.
+        Set up mock MemoryGraph, PolicyEngine, and AgentBroker services.
         This isolates the Planner's logic for true unit testing.
         """
         self.mock_memory = Mock()
         self.mock_policy = Mock()
-        self.planner = Planner(self.mock_memory, self.mock_policy)
+        self.mock_broker = Mock()
+        self.planner = Planner(self.mock_memory, self.mock_policy, self.mock_broker)
 
     def test_plan_creation_success(self):
         """Test a successful plan creation with no special conditions."""
@@ -81,6 +82,47 @@ class TestPlanner(unittest.TestCase):
         plan = self.planner.create_plan(intent)
         self.assertEqual(plan["status"], "failed")
         self.assertIn("Could not understand intent", plan["reason"])
+
+    def test_execute_plan_success(self):
+        """Test that an executable plan is correctly passed to the broker."""
+        # The plan to be "executed"
+        executable_plan = {
+            "status": "executable",
+            "calls": [{"call": "TestAgent.do_something", "parameters": {}}]
+        }
+        # Configure the mock broker to return a successful result
+        self.mock_broker.execute_call.return_value = {"data": "success"}
+
+        result = self.planner.execute_plan(executable_plan)
+
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["result"], {"data": "success"})
+        self.mock_broker.execute_call.assert_called_once_with(executable_plan["calls"][0])
+
+    def test_execute_plan_that_is_not_executable(self):
+        """Test that a rejected plan is not executed."""
+        rejected_plan = {"status": "rejected", "calls": []}
+
+        result = self.planner.execute_plan(rejected_plan)
+
+        self.assertEqual(result["status"], "execution_failed")
+        self.assertIn("not executable", result["error"])
+        # Ensure the broker was not called
+        self.mock_broker.execute_call.assert_not_called()
+
+    def test_execute_plan_handles_broker_failure(self):
+        """Test that the planner handles exceptions from the broker."""
+        executable_plan = {
+            "status": "executable",
+            "calls": [{"call": "TestAgent.do_something", "parameters": {}}]
+        }
+        # Configure the mock broker to raise an exception
+        self.mock_broker.execute_call.side_effect = Exception("Agent not available")
+
+        result = self.planner.execute_plan(executable_plan)
+
+        self.assertEqual(result["status"], "execution_failed")
+        self.assertEqual(result["error"], "Agent not available")
 
 if __name__ == '__main__':
     unittest.main()
