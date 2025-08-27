@@ -5,6 +5,7 @@ from system.core.policy_engine import PolicyEngine
 from system.core.memory_graph import MemoryGraph
 from system.core.agent_broker import AgentBroker
 from system.core.planner import Planner
+from system.security.prompt_guard import PromptGuard
 from experience.card_renderer import CardRenderer
 
 # Import utilities
@@ -42,9 +43,9 @@ def main():
     # 2. Instantiate all core services
     print("  - Instantiating services...")
     policy_engine = PolicyEngine(policy_doc)
-    # Use a file-based DB for persistent memory between runs
     memory_graph = MemoryGraph(db_path=get_path("ai_os_memory.db"))
     agent_broker = AgentBroker()
+    prompt_guard = PromptGuard() # New security service
     planner = Planner(memory_graph, policy_engine, agent_broker)
     card_renderer = CardRenderer()
 
@@ -66,7 +67,13 @@ def main():
             if not user_input:
                 continue
 
-            # 1. Create intent
+            # 1. Scan the input for prompt injection before processing
+            scan_result = prompt_guard.scan(user_input)
+            if not scan_result["is_safe"]:
+                print(f"\n[OS SECURITY] Input rejected. Reason: {scan_result['reason']}")
+                continue  # Skip to the next prompt
+
+            # 2. Create intent
             intent = {"user_utterance": user_input, "context": {}}
             print("\n[OS] Intent created...")
             pprint.pprint(intent)
