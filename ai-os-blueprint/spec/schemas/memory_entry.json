@@ -1,0 +1,30 @@
+{
+  "memory_id": "mem_pref_airline_delta_16642239",
+  "timestamp": "2024-09-27T10:00:00Z",
+  "type": "preference",
+  "content": {
+    "key": "airline",
+    "value": "Delta",
+    "source_utterance": "Book me a flight on Delta"
+  },
+  "metadata": {
+    "source_agent": "Planner",
+    "confidence": 0.95
+  },
+  "consent": {
+    "access_rules": [
+      {
+        "principal_type": "agent_service",
+        "principal_id": "Delta",
+        "access_level": "read"
+      },
+      {
+        "principal_type": "agent_category",
+        "principal_id": "travel",
+        "access_level": "read"
+      }
+    ],
+    "never_remember": false,
+    "expiry_ttl_days": 365
+  }
+}
