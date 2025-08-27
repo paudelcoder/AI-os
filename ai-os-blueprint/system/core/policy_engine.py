@@ -12,14 +12,16 @@ class PolicyEngine:
     """
     A simple policy engine to evaluate capability calls against a set of policies.
     """
-    def __init__(self, policy_document):
+    def __init__(self, policy_document, audit_log_service):
         """
-        Initializes the engine with a policy document.
+        Initializes the engine with a policy document and the audit service.
         :param policy_document: A dictionary representing the policy JSON.
+        :param audit_log_service: An instance of AuditLogService.
         """
         if not isinstance(policy_document, dict) or "policies" not in policy_document:
             raise ValueError("Invalid policy document format")
         self.policies = policy_document.get("policies", [])
+        self.audit = audit_log_service
 
     def evaluate_call(self, capability_call):
         """
@@ -33,6 +35,15 @@ class PolicyEngine:
         # 1. Check for an explicit DENY. Deny policies take precedence.
         for policy in self.policies:
             if policy.get("effect") == "deny" and self._matches(policy, capability_call):
+                self.audit.log_action(
+                    principal={"type": "service", "id": "PolicyEngine"},
+                    action="policy.decision",
+                    details={
+                        "decision": "DENIED",
+                        "matched_policy_id": policy.get("policy_id"),
+                        "capability_call": capability_call
+                    }
+                )
                 return Decision.DENIED
 
         # 2. Check for ALLOW and REQUIRE_CONFIRMATION policies.

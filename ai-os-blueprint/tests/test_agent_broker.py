@@ -15,7 +15,8 @@ class TestAgentBroker(unittest.TestCase):
 
     def setUp(self):
         """Set up a new AgentBroker for each test."""
-        self.broker = AgentBroker()
+        self.mock_audit = Mock()
+        self.broker = AgentBroker(self.mock_audit)
         self.test_manifest = {"service": "TestAgent", "capabilities": []}
         self.test_base_url = "http://localhost:1234"
         self.broker.register_agent(self.test_manifest, self.test_base_url)
@@ -54,6 +55,14 @@ class TestAgentBroker(unittest.TestCase):
             timeout=5
         )
 
+        # Verify that the audit log was called twice (for execute and response)
+        self.assertEqual(self.mock_audit.log_action.call_count, 2)
+        # Check the first call (the execution log)
+        self.assertEqual(self.mock_audit.log_action.call_args_list[0][0][1], "agent.call.execute")
+        # Check the second call (the response log)
+        self.assertEqual(self.mock_audit.log_action.call_args_list[1][0][1], "agent.call.response")
+        self.assertEqual(self.mock_audit.log_action.call_args_list[1][0][2]["status"], "success")
+
     def test_execute_call_unregistered_service(self):
         """Test that executing a call for an unregistered service raises an error."""
         capability_call = {"call": "UnknownAgent.do_something"}
@@ -72,6 +81,12 @@ class TestAgentBroker(unittest.TestCase):
         # The broker re-raises the exception, so we expect it here.
         with self.assertRaises(requests.exceptions.HTTPError):
             self.broker.execute_call(capability_call)
+
+        # Verify that the audit log was called twice (for execute and response)
+        self.assertEqual(self.mock_audit.log_action.call_count, 2)
+        # Check the second call (the failure response log)
+        self.assertEqual(self.mock_audit.log_action.call_args_list[1][0][1], "agent.call.response")
+        self.assertEqual(self.mock_audit.log_action.call_args_list[1][0][2]["status"], "failure")
 
 if __name__ == '__main__':
     unittest.main()

@@ -6,9 +6,13 @@ class AgentBroker:
     Acts as a central hub for discovering agent capabilities and executing calls.
     """
 
-    def __init__(self):
-        """Initializes the AgentBroker with an empty agent registry."""
+    def __init__(self, audit_log_service):
+        """
+        Initializes the AgentBroker with an empty agent registry and the audit service.
+        :param audit_log_service: An instance of AuditLogService.
+        """
         self.registry = {}  # Key: service_name, Value: {base_url, manifest}
+        self.audit = audit_log_service
 
     def register_agent(self, manifest, base_url):
         """
@@ -55,11 +59,29 @@ class AgentBroker:
         endpoint_url = f"{agent['base_url']}/{capability_name}"
         parameters = capability_call.get("parameters", {})
 
+        self.audit.log_action(
+            principal={"type": "service", "id": "AgentBroker"},
+            action="agent.call.execute",
+            details={"capability_call": capability_call}
+        )
+
         try:
             response = requests.post(endpoint_url, json=parameters, timeout=5)
             response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
-            return response.json()
+
+            response_data = response.json()
+            self.audit.log_action(
+                principal={"type": "service", "id": "AgentBroker"},
+                action="agent.call.response",
+                details={"call": call_str, "status": "success", "response": response_data}
+            )
+            return response_data
         except requests.exceptions.RequestException as e:
+            self.audit.log_action(
+                principal={"type": "service", "id": "AgentBroker"},
+                action="agent.call.response",
+                details={"call": call_str, "status": "failure", "error": str(e)}
+            )
             print(f"Error calling agent {service_name}: {e}")
             # Re-raise the exception to be handled by the caller (e.g., the Planner).
             raise

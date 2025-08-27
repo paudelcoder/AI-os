@@ -45,9 +45,10 @@ class TestShellIntegration(unittest.TestCase):
         }
 
         # 3. Instantiate all services with real implementations
+        self.mock_audit = Mock()
         self.memory_graph = MemoryGraph()
-        self.policy_engine = PolicyEngine(policy_doc)
-        self.agent_broker = AgentBroker()
+        self.policy_engine = PolicyEngine(policy_doc, self.mock_audit)
+        self.agent_broker = AgentBroker(self.mock_audit)
         self.card_renderer = CardRenderer()
         self.vault_service = VaultService() # New service
 
@@ -56,7 +57,12 @@ class TestShellIntegration(unittest.TestCase):
         self.agent_broker.register_agent(self.payments_manifest, "http://fake-payments-agent:5003")
 
         # 5. The Planner ties all services together
-        self.planner = Planner(self.memory_graph, self.policy_engine, self.agent_broker)
+        self.planner = Planner(
+            self.memory_graph,
+            self.policy_engine,
+            self.agent_broker,
+            self.mock_audit
+        )
 
     @patch('system.core.agent_broker.AgentBroker.execute_call')
     def test_full_flow_for_ride_request(self, mock_execute_call):

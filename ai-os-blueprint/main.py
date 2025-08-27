@@ -5,6 +5,7 @@ from system.core.policy_engine import PolicyEngine
 from system.core.memory_graph import MemoryGraph
 from system.core.agent_broker import AgentBroker
 from system.core.planner import Planner
+from system.security.audit_log_service import AuditLogService
 from system.security.prompt_guard import PromptGuard
 from experience.card_renderer import CardRenderer
 
@@ -12,6 +13,7 @@ from experience.card_renderer import CardRenderer
 import json
 import os
 import pprint
+import traceback
 
 def main():
     """
@@ -42,11 +44,12 @@ def main():
 
     # 2. Instantiate all core services
     print("  - Instantiating services...")
-    policy_engine = PolicyEngine(policy_doc)
+    audit_log_service = AuditLogService(get_path("audit.log"))
+    policy_engine = PolicyEngine(policy_doc, audit_log_service)
     memory_graph = MemoryGraph(db_path=get_path("ai_os_memory.db"))
-    agent_broker = AgentBroker()
+    agent_broker = AgentBroker(audit_log_service)
     prompt_guard = PromptGuard() # New security service
-    planner = Planner(memory_graph, policy_engine, agent_broker)
+    planner = Planner(memory_graph, policy_engine, agent_broker, audit_log_service)
     card_renderer = CardRenderer()
 
     # 3. Register agents with the broker
@@ -113,7 +116,6 @@ def main():
 
         except Exception as e:
             print(f"\n[OS] An unexpected error occurred: {e}")
-            import traceback
             traceback.print_exc()
 
     print("\nAI OS Shell shutting down.")

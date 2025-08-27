@@ -10,17 +10,19 @@ class Planner:
     and secure plans.
     """
 
-    def __init__(self, memory_graph, policy_engine, agent_broker):
+    def __init__(self, memory_graph, policy_engine, agent_broker, audit_log_service):
         """
         Initializes the Planner with its dependent services.
 
         :param memory_graph: An instance of MemoryGraph.
         :param policy_engine: An instance of PolicyEngine.
         :param agent_broker: An instance of AgentBroker.
+        :param audit_log_service: An instance of AuditLogService.
         """
         self.memory = memory_graph
         self.policy = policy_engine
         self.broker = agent_broker
+        self.audit = audit_log_service
         # The Planner itself is a principal when accessing services like memory.
         self.principal = {"type": "os_service", "id": "Planner"}
 
@@ -36,16 +38,26 @@ class Planner:
         utterance = intent.get("user_utterance", "").lower()
 
         # Simple, keyword-based routing to different planning functions.
+        plan = None
         if "flight" in utterance and ("book" in utterance or "find" in utterance):
-            return self._plan_book_flight(intent)
+            plan = self._plan_book_flight(intent)
 
-        if "ride" in utterance or "taxi" in utterance:
-            return self._plan_request_ride(intent)
+        elif "ride" in utterance or "taxi" in utterance:
+            plan = self._plan_request_ride(intent)
 
-        if "pay" in utterance or "payment" in utterance:
-            return self._plan_make_payment(intent)
+        elif "pay" in utterance or "payment" in utterance:
+            plan = self._plan_make_payment(intent)
 
-        return {"status": "failed", "reason": "Could not understand intent", "calls": []}
+        else:
+            plan = {"status": "failed", "reason": "Could not understand intent", "calls": []}
+
+        # Log the final plan before returning it.
+        self.audit.log_action(
+            principal=self.principal,
+            action="planner.plan.create",
+            details={"intent": intent, "plan": plan}
+        )
+        return plan
 
     def _plan_book_flight(self, intent):
         """

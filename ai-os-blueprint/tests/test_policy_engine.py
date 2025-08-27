@@ -5,6 +5,7 @@ import unittest
 # Add the project root directory to the Python path to allow imports from 'core'
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from unittest.mock import Mock
 from system.core.policy_engine import PolicyEngine, Decision
 
 class TestPolicyEngine(unittest.TestCase):
@@ -12,7 +13,7 @@ class TestPolicyEngine(unittest.TestCase):
 
     def setUp(self):
         """Set up a sample policy document and engine for use in tests."""
-        policy_doc = {
+        self.policy_doc = {
           "version": "1.0",
           "policies": [
             {
@@ -46,7 +47,8 @@ class TestPolicyEngine(unittest.TestCase):
             }
           ]
         }
-        self.engine = PolicyEngine(policy_doc)
+        self.mock_audit = Mock()
+        self.engine = PolicyEngine(self.policy_doc, self.mock_audit)
 
     def test_simple_allow(self):
         """Test a call that should be clearly allowed."""
@@ -65,6 +67,13 @@ class TestPolicyEngine(unittest.TestCase):
             "parameters": {"amount": 1000, "currency": "USD"}
         }
         self.assertEqual(self.engine.evaluate_call(call), Decision.DENIED)
+
+        # Verify that the denial was logged
+        self.mock_audit.log_action.assert_called_once()
+        call_args = self.mock_audit.log_action.call_args[0]
+        self.assertEqual(call_args[1], "policy.decision")
+        self.assertEqual(call_args[2]["decision"], "DENIED")
+        self.assertEqual(call_args[2]["matched_policy_id"], "deny-risky-payments")
 
     def test_allow_when_deny_condition_is_not_met(self):
         """Test that a call is allowed if it doesn't meet the DENY condition."""

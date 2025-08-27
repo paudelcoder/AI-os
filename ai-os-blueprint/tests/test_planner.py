@@ -21,7 +21,13 @@ class TestPlanner(unittest.TestCase):
         self.mock_memory = Mock()
         self.mock_policy = Mock()
         self.mock_broker = Mock()
-        self.planner = Planner(self.mock_memory, self.mock_policy, self.mock_broker)
+        self.mock_audit = Mock()
+        self.planner = Planner(
+            self.mock_memory,
+            self.mock_policy,
+            self.mock_broker,
+            self.mock_audit
+        )
 
     def test_plan_creation_success(self):
         """Test a successful plan creation with no special conditions."""
@@ -39,6 +45,11 @@ class TestPlanner(unittest.TestCase):
         # Verify that the planner interacted with its dependencies as expected
         self.mock_memory.find_memories.assert_called_once()
         self.mock_policy.evaluate_call.assert_called_once()
+        # Verify that the plan creation was logged
+        self.mock_audit.log_action.assert_called_once()
+        call_args = self.mock_audit.log_action.call_args[0]
+        self.assertEqual(call_args[1], "planner.plan.create")
+        self.assertEqual(call_args[2]["plan"], plan)
 
     def test_plan_with_memory_enrichment(self):
         """Test that the planner correctly uses a preference from the Memory Graph."""
