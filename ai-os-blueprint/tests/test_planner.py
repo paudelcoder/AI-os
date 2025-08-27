@@ -143,5 +143,27 @@ class TestPlanner(unittest.TestCase):
         self.assertEqual(result["status"], "execution_failed")
         self.assertEqual(result["error"], "Agent not available")
 
+    def test_plan_creation_for_payment(self):
+        """Test successful plan creation for a payment intent."""
+        # Configure mocks
+        self.mock_memory.find_memories.return_value = []
+        self.mock_policy.evaluate_call.return_value = Decision.ALLOWED
+
+        intent = {"user_utterance": "Pay $50.75 to the coffee shop"}
+        plan = self.planner.create_plan(intent)
+
+        self.assertEqual(plan["status"], "executable")
+        self.assertEqual(len(plan["calls"]), 1)
+
+        payment_call = plan["calls"][0]
+        self.assertEqual(payment_call["call"], "Payments.make_payment")
+        self.assertEqual(payment_call["parameters"]["amount"], 50.75)
+        self.assertEqual(payment_call["parameters"]["merchant"], "the coffee shop")
+        # Check that the hardcoded default token key is used
+        self.assertEqual(payment_call["parameters"]["payment_token_key"], "payment_token_amex_1005")
+
+        self.mock_policy.evaluate_call.assert_called_once()
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -12,6 +12,7 @@ from system.core.policy_engine import PolicyEngine
 from system.core.memory_graph import MemoryGraph
 from system.core.agent_broker import AgentBroker
 from system.core.planner import Planner
+from system.core.vault_service import VaultService
 from experience.card_renderer import CardRenderer
 
 class TestShellIntegration(unittest.TestCase):
@@ -33,26 +34,28 @@ class TestShellIntegration(unittest.TestCase):
             }]
         }
 
-        # 2. Create a manifest for our mock agent
+        # 2. Create manifests for our mock agents
         self.rides_manifest = {
-            "service": "Rides",
-            "version": "1.0.0",
-            "capabilities": [{
-                "name": "request_ride",
-                "output_schema": {"display_hint": "ride_confirmation"}
-            }]
+            "service": "Rides", "version": "1.0.0",
+            "capabilities": [{"name": "request_ride", "output_schema": {"display_hint": "ride_confirmation"}}]
+        }
+        self.payments_manifest = {
+            "service": "Payments", "version": "1.0.0",
+            "capabilities": [{"name": "make_payment", "output_schema": {"display_hint": "payment_confirmation"}}]
         }
 
         # 3. Instantiate all services with real implementations
-        self.memory_graph = MemoryGraph()  # Uses an in-memory DB for tests
+        self.memory_graph = MemoryGraph()
         self.policy_engine = PolicyEngine(policy_doc)
         self.agent_broker = AgentBroker()
         self.card_renderer = CardRenderer()
+        self.vault_service = VaultService() # New service
 
-        # 4. Register the (soon-to-be-mocked) agent
+        # 4. Register agents
         self.agent_broker.register_agent(self.rides_manifest, "http://fake-rides-agent:5002")
+        self.agent_broker.register_agent(self.payments_manifest, "http://fake-payments-agent:5003")
 
-        # 5. The Planner ties all the real services together
+        # 5. The Planner ties all services together
         self.planner = Planner(self.memory_graph, self.policy_engine, self.agent_broker)
 
     @patch('system.core.agent_broker.AgentBroker.execute_call')
@@ -90,6 +93,46 @@ class TestShellIntegration(unittest.TestCase):
         self.assertEqual(final_card["subtitle"], "Driver: Test Driver")
         self.assertIn("8 minutes", final_card["components"][0]["value"])
         self.assertIn("$25.50", final_card["components"][1]["value"])
+
+    @patch('system.core.agent_broker.AgentBroker.execute_call')
+    def test_full_flow_for_payment(self, mock_execute_call):
+        """Tests the complete end-to-end flow for a payment command."""
+        # 1. Store a secret in the vault (as the user would have done previously)
+        # Note: In a real flow, the planner wouldn't need to know the token key,
+        # but for this test, we use it to confirm the right one was chosen.
+        self.vault_service.store_secret(
+            "payment_token_amex_1005",
+            "real-token-data-would-go-here",
+            principal={"type": "user"}
+        )
+
+        # 2. Define user intent
+        intent = {"user_utterance": "pay $19.99 to Netflix"}
+
+        # 3. Mock the agent's response
+        mock_agent_response = {
+            "transaction_id": "txn_integ_test_456",
+            "status": "approved",
+            "amount_paid": 19.99,
+            "merchant_name": "Netflix"
+        }
+        mock_execute_call.return_value = mock_agent_response
+
+        # 4. Run the core OS logic
+        plan = self.planner.create_plan(intent)
+        execution_result = self.planner.execute_plan(plan)
+
+        # Assert execution success
+        self.assertEqual(execution_result["status"], "success")
+
+        # 5. Render the result
+        output_schema = self.payments_manifest["capabilities"][0]["output_schema"]
+        final_card = self.card_renderer.render(execution_result["result"], output_schema)
+
+        # 6. Assert the final UI card is correct
+        self.assertEqual(final_card["title"], "Payment Successful") # Assuming renderer is updated for this
+        self.assertIn("$19.99", final_card["components"][0]["value"])
+        self.assertIn("Netflix", final_card["components"][1]["value"])
 
 if __name__ == '__main__':
     unittest.main()

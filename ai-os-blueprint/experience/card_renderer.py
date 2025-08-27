@@ -17,6 +17,9 @@ class CardRenderer:
         if display_hint == "ride_confirmation":
             return self._render_ride_confirmation(agent_output)
 
+        if display_hint == "payment_confirmation":
+            return self._render_payment_confirmation(agent_output)
+
         # A more advanced implementation would have more renderers for other hints.
 
         # Fallback to a generic renderer if no specific hint matches.
@@ -49,6 +52,29 @@ class CardRenderer:
                     "parameters": {"ride_id": ride_id}
                 }}
             ]
+        }
+        return card
+
+    def _render_payment_confirmation(self, data):
+        """
+        Renders a specific, rich card for a payment confirmation.
+
+        :param data: The agent output data for the payment.
+        :return: A dictionary structured as a UI card.
+        """
+        amount = data.get("amount_paid", 0.0)
+        merchant = data.get("merchant_name", "Unknown Merchant")
+
+        card = {
+            "card_id": f"card_{data.get('transaction_id', 'unknown_txn')}",
+            "card_type": "rich_info",
+            "title": "Payment Successful",
+            "subtitle": f"Transaction ID: {data.get('transaction_id', 'N/A')}",
+            "components": [
+                {"type": "highlight", "label": "Amount", "value": f"${amount:.2f}"},
+                {"type": "key_value", "label": "Paid To", "value": merchant}
+            ],
+            "actions": []
         }
         return card
 

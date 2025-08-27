@@ -1,0 +1,34 @@
+{
+  "service": "Payments",
+  "version": "1.0.0",
+  "capabilities": [
+    {
+      "name": "make_payment",
+      "description": "Makes a payment to a specified merchant using a stored payment token.",
+      "input_schema": {
+        "amount": "number",
+        "currency": "string (e.g., 'USD')",
+        "merchant": "string",
+        "payment_token_key": "string"
+      },
+      "output_schema": {
+        "display_hint": "payment_confirmation",
+        "properties": {
+          "transaction_id": "string",
+          "status": "string",
+          "amount_paid": "number",
+          "merchant_name": "string"
+        }
+      },
+      "scopes": [
+        "payment.charge"
+      ]
+    }
+  ],
+  "auth": {
+    "type": "oauth2",
+    "scopes": [
+      "openid"
+    ]
+  }
+}

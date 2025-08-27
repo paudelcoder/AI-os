@@ -1,3 +1,4 @@
+import re
 from .policy_engine import Decision
 
 class Planner:
@@ -40,6 +41,9 @@ class Planner:
 
         if "ride" in utterance or "taxi" in utterance:
             return self._plan_request_ride(intent)
+
+        if "pay" in utterance or "payment" in utterance:
+            return self._plan_make_payment(intent)
 
         return {"status": "failed", "reason": "Could not understand intent", "calls": []}
 
@@ -104,6 +108,49 @@ class Planner:
             "parameters": {"destination": destination}
         }
         plan_calls = [ride_call]
+
+        # Validate with Policy Engine
+        plan_status = "executable"
+        for call in plan_calls:
+            decision = self.policy.evaluate_call(call)
+            if decision == Decision.DENIED:
+                return {
+                    "status": "rejected",
+                    "reason": f"Action '{call['call']}' is denied by policy.",
+                    "calls": plan_calls
+                }
+            if decision == Decision.REQUIRES_CONFIRMATION:
+                plan_status = "needs_confirmation"
+
+        return {"status": plan_status, "calls": plan_calls}
+
+    def _plan_make_payment(self, intent):
+        """Generates a plan to make a payment."""
+        utterance = intent.get("user_utterance", "").lower()
+
+        # MVP entity extraction for amount and merchant
+        amount_match = re.search(r'\$?(\d+\.?\d*)', utterance)
+        amount = float(amount_match.group(1)) if amount_match else 0.0
+
+        merchant = "unknown"
+        if " to " in utterance:
+            merchant = utterance.split(" to ", 1)[1]
+
+        # MVP: Assume a default payment token. A real system would have logic
+        # to select from multiple user payment methods stored in the vault.
+        payment_token_key = "payment_token_amex_1005"
+
+        # Generate the capability call
+        payment_call = {
+            "call": "Payments.make_payment",
+            "parameters": {
+                "amount": amount,
+                "currency": "USD",
+                "merchant": merchant,
+                "payment_token_key": payment_token_key
+            }
+        }
+        plan_calls = [payment_call]
 
         # Validate with Policy Engine
         plan_status = "executable"
