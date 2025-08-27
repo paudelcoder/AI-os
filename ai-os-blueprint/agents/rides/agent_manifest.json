@@ -1,0 +1,34 @@
+{
+  "service": "Rides",
+  "version": "1.0.0",
+  "capabilities": [
+    {
+      "name": "request_ride",
+      "description": "Requests a ride to a specified destination.",
+      "input_schema": {
+        "destination": "string",
+        "vehicle_type": "string (e.g., 'standard', 'premium')"
+      },
+      "output_schema": {
+        "ride_id": "string",
+        "driver_name": "string",
+        "eta_minutes": "number",
+        "price_estimate": "number"
+      },
+      "scopes": [
+        "payment.charge",
+        "location.read"
+      ]
+    }
+  ],
+  "auth": {
+    "type": "oauth2",
+    "scopes": [
+      "openid",
+      "profile"
+    ]
+  },
+  "privacy": {
+    "data_retention_days": 1
+  }
+}

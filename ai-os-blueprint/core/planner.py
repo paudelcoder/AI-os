@@ -38,6 +38,9 @@ class Planner:
         if "flight" in utterance and ("book" in utterance or "find" in utterance):
             return self._plan_book_flight(intent)
 
+        if "ride" in utterance or "taxi" in utterance:
+            return self._plan_request_ride(intent)
+
         return {"status": "failed", "reason": "Could not understand intent", "calls": []}
 
     def _plan_book_flight(self, intent):
@@ -83,6 +86,38 @@ class Planner:
                 plan_status = "needs_confirmation"
 
         # 4. Return the final, validated plan
+        return {"status": plan_status, "calls": plan_calls}
+
+    def _plan_request_ride(self, intent):
+        """Generates a plan to request a ride."""
+        utterance = intent.get("user_utterance", "").lower()
+
+        # MVP entity extraction: find the destination, defaults to 'unknown'
+        destination = "unknown"
+        if " to " in utterance:
+            # Takes everything after the first " to " as the destination
+            destination = utterance.split(" to ", 1)[1]
+
+        # Generate the capability call
+        ride_call = {
+            "call": "Rides.request_ride",
+            "parameters": {"destination": destination}
+        }
+        plan_calls = [ride_call]
+
+        # Validate with Policy Engine
+        plan_status = "executable"
+        for call in plan_calls:
+            decision = self.policy.evaluate_call(call)
+            if decision == Decision.DENIED:
+                return {
+                    "status": "rejected",
+                    "reason": f"Action '{call['call']}' is denied by policy.",
+                    "calls": plan_calls
+                }
+            if decision == Decision.REQUIRES_CONFIRMATION:
+                plan_status = "needs_confirmation"
+
         return {"status": plan_status, "calls": plan_calls}
 
     def execute_plan(self, plan):

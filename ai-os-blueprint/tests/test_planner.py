@@ -83,6 +83,25 @@ class TestPlanner(unittest.TestCase):
         self.assertEqual(plan["status"], "failed")
         self.assertIn("Could not understand intent", plan["reason"])
 
+    def test_plan_creation_for_ride(self):
+        """Test successful plan creation for a ride-hailing intent."""
+        # Configure mocks for this specific test
+        self.mock_memory.find_memories.return_value = []
+        self.mock_policy.evaluate_call.return_value = Decision.ALLOWED
+
+        intent = {"user_utterance": "Can you get me a ride to the main library?"}
+        plan = self.planner.create_plan(intent)
+
+        self.assertEqual(plan["status"], "executable")
+        self.assertEqual(len(plan["calls"]), 1)
+
+        ride_call = plan["calls"][0]
+        self.assertEqual(ride_call["call"], "Rides.request_ride")
+        self.assertEqual(ride_call["parameters"]["destination"], "the main library")
+
+        # The policy engine should always be called to validate the plan.
+        self.mock_policy.evaluate_call.assert_called_once()
+
     def test_execute_plan_success(self):
         """Test that an executable plan is correctly passed to the broker."""
         # The plan to be "executed"
