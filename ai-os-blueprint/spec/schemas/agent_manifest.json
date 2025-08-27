@@ -1,0 +1,57 @@
+{
+  "service": "ExampleService",
+  "version": "1.0.0",
+  "capabilities": [
+    {
+      "name": "search_flights",
+      "description": "Searches for available flights based on given criteria.",
+      "input_schema": {
+        "from": "IATA",
+        "to": "IATA",
+        "date": "YYYY-MM-DD",
+        "max_price": "number"
+      },
+      "output_schema": {
+        "itineraries": [
+          {
+            "id": "string",
+            "price": "number",
+            "depart": "ISO",
+            "arrive": "ISO"
+          }
+        ]
+      },
+      "scopes": [
+        "profile.read",
+        "loyalty.read"
+      ]
+    },
+    {
+      "name": "book_flight",
+      "description": "Books a flight from a previously searched itinerary.",
+      "input_schema": {
+        "itinerary_id": "string",
+        "payment_method": "token"
+      },
+      "output_schema": {
+        "ticket_id": "string",
+        "pkpass_url": "string"
+      },
+      "scopes": [
+        "payment.charge",
+        "pass.write"
+      ]
+    }
+  ],
+  "auth": {
+    "type": "oauth2",
+    "scopes": [
+      "openid",
+      "email",
+      "offline_access"
+    ]
+  },
+  "privacy": {
+    "data_retention_days": 0
+  }
+}

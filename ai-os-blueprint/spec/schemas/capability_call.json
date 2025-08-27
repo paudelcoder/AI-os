@@ -1,0 +1,11 @@
+{
+  "call": "Delta.book_flight",
+  "parameters": {
+    "itinerary_id": "DL-1234-AUSJFK-0900",
+    "payment_method": "vault:amex_ending_1005"
+  },
+  "policy": {
+    "confirm_user": true,
+    "max_amount": 300
+  }
+}

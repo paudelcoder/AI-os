@@ -1,0 +1,14 @@
+{
+  "user_utterance": "Book me a flight to NYC next Friday under $300",
+  "context": {
+    "location": "Austin",
+    "prefs": {
+      "seat": "aisle",
+      "airline": "Delta"
+    }
+  },
+  "privacy": {
+    "share_contacts": false,
+    "share_payment": "ask"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "description": "An example policy document defining security and privacy rules for the AI OS.",
+  "policies": [
+    {
+      "policy_id": "finance-spending-limit",
+      "description": "Deny any financial transaction that exceeds $500 in a single call.",
+      "effect": "deny",
+      "actions": [
+        "*.charge",
+        "*.pay",
+        "*.book_*"
+      ],
+      "conditions": {
+        "any_key_numeric_greater_than": {
+          "keys": ["parameters.amount", "parameters.price", "parameters.max_price"],
+          "value": 500
+        }
+      }
+    },
+    {
+      "policy_id": "confirm-contact-sharing",
+      "description": "Require explicit user confirmation before sharing contact information.",
+      "effect": "require_confirmation",
+      "actions": [
+        "Contacts.read",
+        "Contacts.share",
+        "*.read_contacts"
+      ],
+      "conditions": null
+    },
+    {
+      "policy_id": "allow-calendar-reads",
+      "description": "Explicitly allow agents to read from the calendar without confirmation.",
+      "effect": "allow",
+      "actions": [
+        "Calendar.search_calendar_events",
+        "Calendar.read_*"
+      ],
+      "conditions": null
+    }
+  ]
+}

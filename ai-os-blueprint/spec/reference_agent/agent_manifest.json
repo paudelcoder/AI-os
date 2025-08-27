@@ -1,0 +1,36 @@
+{
+  "service": "Calendar",
+  "version": "1.0.0",
+  "capabilities": [
+    {
+      "name": "search_calendar_events",
+      "description": "Searches for events in the user's calendar on a specific date.",
+      "input_schema": {
+        "date": "YYYY-MM-DD"
+      },
+      "output_schema": {
+        "events": [
+          {
+            "title": "string",
+            "time": "HH:MM",
+            "duration_minutes": "number"
+          }
+        ]
+      },
+      "scopes": [
+        "calendar.read"
+      ]
+    }
+  ],
+  "auth": {
+    "type": "oauth2",
+    "scopes": [
+      "openid",
+      "email",
+      "https://www.googleapis.com/auth/calendar.readonly"
+    ]
+  },
+  "privacy": {
+    "data_retention_days": 1
+  }
+}
