@@ -1,0 +1,86 @@
+import unittest
+from unittest.mock import Mock
+
+import sys
+import os
+
+# Add the project root directory to the Python path to allow imports from 'core'
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from core.planner import Planner
+from core.policy_engine import Decision
+
+class TestPlanner(unittest.TestCase):
+    """Unit tests for the Planner service."""
+
+    def setUp(self):
+        """
+        Set up mock MemoryGraph and PolicyEngine services for each test.
+        This isolates the Planner's logic for true unit testing.
+        """
+        self.mock_memory = Mock()
+        self.mock_policy = Mock()
+        self.planner = Planner(self.mock_memory, self.mock_policy)
+
+    def test_plan_creation_success(self):
+        """Test a successful plan creation with no special conditions."""
+        # Configure mocks for this test case
+        self.mock_memory.find_memories.return_value = []  # No preferences in memory
+        self.mock_policy.evaluate_call.return_value = Decision.ALLOWED
+
+        intent = {"user_utterance": "book a flight to NYC"}
+        plan = self.planner.create_plan(intent)
+
+        self.assertEqual(plan["status"], "executable")
+        self.assertEqual(len(plan["calls"]), 1)
+        self.assertEqual(plan["calls"][0]["call"], "Flights.search_flights")
+
+        # Verify that the planner interacted with its dependencies as expected
+        self.mock_memory.find_memories.assert_called_once()
+        self.mock_policy.evaluate_call.assert_called_once()
+
+    def test_plan_with_memory_enrichment(self):
+        """Test that the planner correctly uses a preference from the Memory Graph."""
+        # Configure mocks to return a preferred airline
+        preferred_airline_mem = [{"content": {"key": "airline", "value": "TestAir"}}]
+        self.mock_memory.find_memories.return_value = preferred_airline_mem
+        self.mock_policy.evaluate_call.return_value = Decision.ALLOWED
+
+        intent = {"user_utterance": "book a flight"}
+        plan = self.planner.create_plan(intent)
+
+        self.assertEqual(plan["status"], "executable")
+        self.assertEqual(plan["calls"][0]["parameters"]["airline"], "TestAir")
+
+    def test_plan_rejected_by_policy(self):
+        """Test that the plan is rejected if the Policy Engine returns DENIED."""
+        # Configure mocks for this test case
+        self.mock_memory.find_memories.return_value = []
+        self.mock_policy.evaluate_call.return_value = Decision.DENIED
+
+        intent = {"user_utterance": "book a flight"}
+        plan = self.planner.create_plan(intent)
+
+        self.assertEqual(plan["status"], "rejected")
+        self.assertIn("denied by policy", plan["reason"])
+
+    def test_plan_needs_confirmation(self):
+        """Test that a plan is flagged for confirmation by the Policy Engine."""
+        # Configure mocks for this test case
+        self.mock_memory.find_memories.return_value = []
+        self.mock_policy.evaluate_call.return_value = Decision.REQUIRES_CONFIRMATION
+
+        intent = {"user_utterance": "book a flight"}
+        plan = self.planner.create_plan(intent)
+
+        self.assertEqual(plan["status"], "needs_confirmation")
+
+    def test_unknown_intent_fails_gracefully(self):
+        """Test that the planner returns a 'failed' status for an unknown intent."""
+        intent = {"user_utterance": "what is the weather like today?"}
+        plan = self.planner.create_plan(intent)
+        self.assertEqual(plan["status"], "failed")
+        self.assertIn("Could not understand intent", plan["reason"])
+
+if __name__ == '__main__':
+    unittest.main()
